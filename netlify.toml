@@ -1,0 +1,11 @@
+# Netlify configuration for the Achieve AI Training portal (static site, no build step)
+[build]
+  publish = "."
+  command = ""
+
+# Single-page app: send all routes to index.html (the app uses hash routing,
+# but this keeps deep links and refreshes working).
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
