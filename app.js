@@ -113,7 +113,7 @@
         '<div class="w-full max-w-md">' +
           '<div class="text-center mb-6">' +
             '<div class="text-4xl mb-2">🎓</div>' +
-            '<h1 class="text-2xl font-bold text-slate-900">Achieve AI Training</h1>' +
+            '<h1 class="text-2xl font-bold text-ink">Achieve AI Training</h1>' +
             '<p class="text-slate-500 text-sm">Project & training portal</p>' +
           "</div>" +
           '<div class="bg-white rounded-2xl shadow-lg p-6">' + inner + "</div>" +
@@ -242,13 +242,13 @@
       return '<a href="' + h + '" class="px-3 py-2 rounded-lg text-sm ' +
         (on ? "bg-brand text-white" : "text-slate-600 hover:bg-slate-100") + '">' + esc(l) + "</a>";
     }).join("");
-    const badge = ME.role === "superadmin" ? "bg-purple-100 text-purple-700"
-      : ME.role === "admin" ? "bg-blue-100 text-blue-700" : "bg-emerald-100 text-emerald-700";
+    const badge = ME.role === "superadmin" ? "bg-plum-light text-[#4c2889]"
+      : ME.role === "admin" ? "bg-brand-light text-brand" : "bg-lime2 text-ink";
     app().innerHTML =
       '<div class="min-h-screen">' +
       '<header class="bg-white border-b sticky top-0 z-30">' +
         '<div class="max-w-6xl mx-auto px-4 flex items-center gap-2 h-14">' +
-          '<a href="#/dashboard" class="font-bold text-slate-900 mr-2">🎓 Achieve</a>' +
+          '<a href="#/dashboard" class="font-bold text-ink mr-2">🎓 Achieve</a>' +
           '<nav class="hidden md:flex gap-1 flex-1">' + links + "</nav>" +
           '<span class="ml-auto text-xs px-2 py-1 rounded-full ' + badge + '">' + pretty(ME.role) + "</span>" +
           '<span class="text-sm text-slate-600 hidden sm:inline">' + esc(ME.full_name || ME.email) + "</span>" +
@@ -263,15 +263,15 @@
 
   function card(title, body, extra) {
     return '<div class="bg-white rounded-xl shadow-sm border p-5 ' + (extra || "") + '">' +
-      (title ? '<h3 class="font-semibold text-slate-900 mb-3">' + esc(title) + "</h3>" : "") + body + "</div>";
+      (title ? '<h3 class="font-semibold text-ink mb-3">' + esc(title) + "</h3>" : "") + body + "</div>";
   }
   function stat(label, value, color) {
     return '<div class="bg-white rounded-xl border p-4"><div class="text-2xl font-bold ' +
-      (color || "text-slate-900") + '">' + value + '</div><div class="text-xs text-slate-500 mt-1">' + esc(label) + "</div></div>";
+      (color || "text-ink") + '">' + value + '</div><div class="text-xs text-slate-500 mt-1">' + esc(label) + "</div></div>";
   }
   function statusPill(s) {
     const done = s === "approved", warn = /changes|hold|withdrawn/.test(s || "");
-    const cls = done ? "bg-emerald-100 text-emerald-700" : warn ? "bg-amber-100 text-amber-700" : "bg-indigo-100 text-indigo-700";
+    const cls = done ? "bg-lime2 text-ink" : warn ? "bg-amber-100 text-amber-800" : "bg-plum-light text-[#5b3d9e]";
     return '<span class="text-xs px-2 py-1 rounded-full ' + cls + '">' + pretty(s) + "</span>";
   }
   function ta(id, label, val) {
@@ -333,7 +333,7 @@
       '<div class="grid gap-4 md:grid-cols-3">' +
         '<div class="md:col-span-2 space-y-4">' +
           card("What do I need to do next?",
-            '<p class="text-lg text-slate-900">' + esc(next) + "</p>" +
+            '<p class="text-lg text-ink">' + esc(next) + "</p>" +
             '<a href="' + nextLink + '" class="inline-block mt-3 bg-brand hover:bg-brand-dark text-white rounded-lg px-4 py-2 text-sm">Go there</a>',
             "border-l-4 border-brand") +
           card("My project",
@@ -345,7 +345,7 @@
             ideas.length
               ? '<ul class="space-y-2">' + ideas.map((i) =>
                   '<li class="flex items-center justify-between text-sm"><span>' + esc(i.title || "Untitled idea") + "</span>" +
-                  (i.is_selected ? '<span class="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">Selected</span>' :
+                  (i.is_selected ? '<span class="text-xs bg-lime2 text-ink px-2 py-0.5 rounded-full">Selected</span>' :
                    i.submitted ? '<span class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">Submitted</span>' :
                    '<span class="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">Draft</span>') + "</li>"
                 ).join("") + "</ul>"
@@ -390,15 +390,15 @@
       const hasId = !!i.id;
       const saved = hasId && !!i.title;
       const badge = i.is_selected
-        ? '<span class="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">Selected</span>'
-        : saved ? '<span class="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">Saved &#10003;</span>'
+        ? '<span class="text-xs bg-lime2 text-ink px-2 py-0.5 rounded-full">Selected</span>'
+        : saved ? '<span class="text-xs bg-lime2 text-ink px-2 py-0.5 rounded-full">Saved &#10003;</span>'
         : hasId ? '<span class="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">Draft &middot; needs a title</span>'
         : '<span class="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">Empty</span>';
       const delBtn = hasId
         ? '<button class="del-idea text-sm text-red-600 border border-red-200 hover:bg-red-50 rounded-lg px-3 py-1.5" data-id="' + i.id + '">Delete</button>'
         : "";
       return card("",
-        '<div class="flex items-center justify-between mb-3"><span class="font-semibold text-slate-900">Idea ' + (n + 1) + "</span>" + badge + "</div>" +
+        '<div class="flex items-center justify-between mb-3"><span class="font-semibold text-ink">Idea ' + (n + 1) + "</span>" + badge + "</div>" +
         '<div class="grid gap-3 md:grid-cols-2" data-idea="' + n + '">' +
           IDEA_FIELDS.map(([f, lbl]) =>
             f === "title"
@@ -823,7 +823,7 @@
       '<div class="border rounded-lg p-4 mb-3">' +
         '<div class="flex items-center justify-between mb-2"><h4 class="font-semibold">Idea ' + (n + 1) + ": " + esc(i.title || "Untitled") + "</h4>" +
           '<div class="flex items-center gap-2">' +
-          (i.is_selected ? '<span class="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full">Selected</span>'
+          (i.is_selected ? '<span class="text-xs bg-lime2 text-ink px-2 py-1 rounded-full">Selected</span>'
             : '<button class="select-idea text-xs bg-brand text-white px-2 py-1 rounded" data-id="' + i.id + '">Select this idea</button>') +
           '<button class="del-idea-admin text-xs text-red-600 border border-red-200 hover:bg-red-50 px-2 py-1 rounded" data-id="' + i.id + '">Delete</button>' +
           "</div>" +
@@ -1108,7 +1108,7 @@
         stat("Total learners", learners.length) +
         stat("Not started", count((p) => p.status === "not_started"), "text-slate-500") +
         stat("Ideas submitted", count((p) => p.status === "ideas_submitted" || p.status === "ideas_under_review"), "text-amber-600") +
-        stat("Building", count((p) => p.status === "building"), "text-indigo-600") +
+        stat("Building", count((p) => p.status === "building"), "text-[#7c5cff]") +
         stat("Project submitted", count((p) => p.status === "project_submitted"), "text-amber-600") +
         stat("Approved", count((p) => p.status === "approved"), "text-emerald-600") +
       "</div>" +

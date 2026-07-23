@@ -8,18 +8,23 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
-      theme: { extend: { colors: { brand: { DEFAULT: '#4f46e5', dark: '#3730a3', light: '#eef2ff' } } } }
+      theme: { extend: { colors: {
+        brand: { DEFAULT: '#FF4500', dark: '#E03D00', light: '#FFEDE5' }, // Orange Primary
+        ink:  '#2D1559',                                                  // Text / deep purple
+        plum: { DEFAULT: '#9F7DFF', light: '#EFE9FF' },                   // Purple Secondary
+        lime2: '#DDFF7D'                                                  // Highlight (use sparingly)
+      } } }
     };
   </script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    body { background:#f8fafc; }
-    .spin { border:3px solid #e2e8f0; border-top-color:#4f46e5; border-radius:50%; width:28px; height:28px; animation:sp 0.7s linear infinite; }
+    body { background:#faf9fd; color:#2D1559; }
+    .spin { border:3px solid #eee7f6; border-top-color:#FF4500; border-radius:50%; width:28px; height:28px; animation:sp 0.7s linear infinite; }
     @keyframes sp { to { transform:rotate(360deg); } }
     [x-cloak]{display:none}
   </style>
 </head>
-<body class="text-slate-800">
+<body class="text-ink">
   <div id="app" class="min-h-screen">
     <div class="flex items-center justify-center h-screen"><div class="spin"></div></div>
   </div>
