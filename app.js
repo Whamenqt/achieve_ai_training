@@ -397,8 +397,8 @@
       const delBtn = hasId
         ? '<button class="del-idea text-sm text-red-600 border border-red-200 hover:bg-red-50 rounded-lg px-3 py-1.5" data-id="' + i.id + '">Delete</button>'
         : "";
-      return card(
-        '<div class="flex items-center justify-between"><span>Idea ' + (n + 1) + "</span>" + badge + "</div>",
+      return card("",
+        '<div class="flex items-center justify-between mb-3"><span class="font-semibold text-slate-900">Idea ' + (n + 1) + "</span>" + badge + "</div>" +
         '<div class="grid gap-3 md:grid-cols-2" data-idea="' + n + '">' +
           IDEA_FIELDS.map(([f, lbl]) =>
             f === "title"
