@@ -1089,21 +1089,27 @@
         '<div class="flex-1 bg-slate-100 rounded-full h-2"><div class="bg-brand h-2 rounded-full" style="width:' +
         Math.round((dist[s] / Math.max(projects.length, 1)) * 100) + '%"></div></div><span class="text-xs text-slate-500">' + dist[s] + "</span></div>").join("");
 
-    const rows = learners.map((l) => {
-      const p = projects.find((x) => x.learner_id === l.id);
+    const projOf = (l) => projects.find((x) => x.learner_id === l.id);
+    const orderIdx = (l) => { const p = projOf(l); return p ? STATUS_ORDER.indexOf(p.status) : 0; };
+    const sortedLearners = learners.slice().sort((a, b) => orderIdx(b) - orderIdx(a) || (a.full_name || a.email).localeCompare(b.full_name || b.email));
+    const rows = sortedLearners.map((l) => {
+      const p = projOf(l);
       return '<tr class="border-b text-sm hover:bg-slate-50"><td class="py-2 px-3">' + esc(l.full_name || l.email) + "</td>" +
         '<td class="px-3">' + esc(nameOf(l.supervisor_id)) + "</td>" +
         '<td class="px-3">' + statusPill(p ? p.status : "not_started") + "</td>" +
-        '<td class="px-3 text-right">' + (p ? '<a href="#/project/' + p.id + '" class="text-brand">Open</a>' : "—") + "</td></tr>";
+        '<td class="px-3 text-right whitespace-nowrap">' + (p
+          ? '<a href="#/review/' + p.id + '" class="text-brand font-medium">Review</a> <a href="#/project/' + p.id + '" class="text-slate-400 ml-2">Full view</a>'
+          : "—") + "</td></tr>";
     }).join("");
 
     chrome(
       '<h2 class="text-xl font-bold mb-4">Programme overview</h2>' +
-      '<div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">' +
+      '<div class="grid grid-cols-2 md:grid-cols-6 gap-3 mb-4">' +
         stat("Total learners", learners.length) +
         stat("Not started", count((p) => p.status === "not_started"), "text-slate-500") +
+        stat("Ideas submitted", count((p) => p.status === "ideas_submitted" || p.status === "ideas_under_review"), "text-amber-600") +
         stat("Building", count((p) => p.status === "building"), "text-indigo-600") +
-        stat("Submitted", count((p) => p.status === "project_submitted"), "text-amber-600") +
+        stat("Project submitted", count((p) => p.status === "project_submitted"), "text-amber-600") +
         stat("Approved", count((p) => p.status === "approved"), "text-emerald-600") +
       "</div>" +
       '<div class="grid gap-4 md:grid-cols-2">' +
