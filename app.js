@@ -378,38 +378,78 @@
     if (!proj) return chrome(card("Ideas", "<p>Project not ready yet.</p>"));
     let { data: ideas } = await sb.from("ideas").select("*").eq("project_id", proj.id).order("created_at");
     ideas = ideas || [];
-    while (ideas.length < 3) ideas.push(null); // show 3 slots
-    const locked = !["not_started", "ideas_in_progress", "changes_requested"].includes(proj.status);
+    const savedCount = ideas.filter((i) => i.title).length;
+    const editable = ["not_started", "ideas_in_progress", "changes_requested"].includes(proj.status);
+    const submittedStage = ["ideas_submitted", "ideas_under_review"].includes(proj.status);
 
-    const forms = ideas.slice(0, 3).map((idea, n) => {
+    const slots = [];
+    for (let n = 0; n < 3; n++) slots.push(ideas[n] || null);
+
+    const forms = slots.map((idea, n) => {
       const i = idea || {};
-      return card("Idea " + (n + 1) + (i.is_selected ? "  ✅ Selected" : ""),
+      const hasId = !!i.id;
+      const saved = hasId && !!i.title;
+      const badge = i.is_selected
+        ? '<span class="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">Selected</span>'
+        : saved ? '<span class="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">Saved &#10003;</span>'
+        : hasId ? '<span class="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">Draft &middot; needs a title</span>'
+        : '<span class="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">Empty</span>';
+      const delBtn = hasId
+        ? '<button class="del-idea text-sm text-red-600 border border-red-200 hover:bg-red-50 rounded-lg px-3 py-1.5" data-id="' + i.id + '">Delete</button>'
+        : "";
+      return card(
+        '<div class="flex items-center justify-between"><span>Idea ' + (n + 1) + "</span>" + badge + "</div>",
         '<div class="grid gap-3 md:grid-cols-2" data-idea="' + n + '">' +
-          IDEA_FIELDS.map(([f, lbl]) => {
-            if (f === "title") return '<div class="md:col-span-2">' + fieldTa(f, lbl, i[f], locked) + "</div>";
-            return fieldTa(f, lbl, i[f], locked);
-          }).join("") +
-          '<div class="md:col-span-2">' + selectField("category", "Category", i.category, CATEGORIES, locked) + "</div>" +
+          IDEA_FIELDS.map(([f, lbl]) =>
+            f === "title"
+              ? '<div class="md:col-span-2">' + fieldTa(f, lbl, i[f], !editable) + "</div>"
+              : fieldTa(f, lbl, i[f], !editable)
+          ).join("") +
+          '<div class="md:col-span-2">' + selectField("category", "Category", i.category, CATEGORIES, !editable) + "</div>" +
           '<input type="hidden" class="idea-id" value="' + (i.id || "") + '">' +
         "</div>" +
-        (locked ? "" :
-          '<button class="save-idea mt-3 text-sm bg-slate-800 text-white rounded-lg px-3 py-1.5" data-idea="' + n + '">Save idea ' + (n + 1) + "</button>")
+        '<div class="mt-3 flex gap-2">' +
+          (editable ? '<button class="save-idea text-sm bg-slate-800 hover:bg-slate-700 text-white rounded-lg px-3 py-1.5" data-idea="' + n + '">Save idea ' + (n + 1) + "</button>" : "") +
+          delBtn +
+        "</div>"
       );
     }).join("");
 
-    const canSubmit = !locked;
+    let banner = "";
+    if (submittedStage) {
+      banner = '<div class="mb-4 p-3 bg-blue-50 text-blue-800 text-sm rounded-lg flex items-center justify-between gap-3">' +
+        "<span>Your ideas are submitted and waiting for review. You can withdraw them to edit, or delete one below.</span>" +
+        '<button id="reopen-ideas" class="shrink-0 text-sm font-medium underline">Withdraw to edit</button></div>';
+    } else if (proj.status === "changes_requested") {
+      banner = '<div class="mb-4 p-3 bg-amber-50 text-amber-800 text-sm rounded-lg">Your supervisor requested changes. Update your ideas below and submit again.</div>';
+    } else if (!editable) {
+      banner = '<div class="mb-4 p-3 bg-slate-100 text-slate-600 text-sm rounded-lg">An idea has been selected, so your ideas are now locked.</div>';
+    }
+
+    const submitReady = savedCount >= 3;
+    const submitArea = editable
+      ? '<div class="mt-4 flex flex-wrap items-center gap-3">' +
+          '<button id="submit-ideas" ' + (submitReady ? "" : "disabled") + ' class="' +
+            (submitReady ? "bg-brand hover:bg-brand-dark" : "bg-slate-300 cursor-not-allowed") +
+            ' text-white rounded-lg px-4 py-2">Submit all three for review</button>' +
+          '<span class="text-sm text-slate-500">' + savedCount + " of 3 ideas saved" +
+            (submitReady ? "" : " &mdash; each idea needs at least a title") + "</span>" +
+        "</div>"
+      : "";
+
     chrome(
-      '<div class="flex items-center justify-between mb-4"><h2 class="text-xl font-bold">My three ideas</h2>' + statusPill(proj.status) + "</div>" +
-      (locked ? '<div class="mb-4 p-3 bg-amber-50 text-amber-800 text-sm rounded-lg">Your ideas are locked while under review or after selection.</div>' : "") +
-      forms +
-      (canSubmit
-        ? '<div class="mt-4 flex gap-2"><button id="submit-ideas" class="bg-brand hover:bg-brand-dark text-white rounded-lg px-4 py-2">Submit all three for review</button></div>'
-        : "")
+      '<div class="flex items-center justify-between mb-4"><h2 class="text-xl font-bold">My three ideas</h2>' +
+        '<div class="flex items-center gap-2">' + statusPill(proj.status) +
+        '<span class="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-full">Saved ' + savedCount + "/3</span></div></div>" +
+      banner + forms + submitArea
     );
 
-    document.querySelectorAll(".save-idea").forEach((b) => (b.onclick = () => saveIdea(proj.id, +b.dataset.idea)));
+    document.querySelectorAll(".save-idea").forEach((b) => (b.onclick = () => saveIdea(proj, +b.dataset.idea)));
+    document.querySelectorAll(".del-idea").forEach((b) => (b.onclick = () => deleteIdea(proj, b.dataset.id)));
     const si = $("#submit-ideas");
     if (si) si.onclick = () => submitIdeas(proj);
+    const ro = $("#reopen-ideas");
+    if (ro) ro.onclick = () => withdrawIdeas(proj);
   }
 
   function fieldTa(id, label, val, locked) {
@@ -433,16 +473,44 @@
     return { id: id || null, obj };
   }
 
-  async function saveIdea(projectId, n) {
+  async function saveIdea(proj, n) {
     const { id, obj } = collectIdea(n);
+    const hasContent = Object.keys(obj).some((k) => obj[k]);
+    if (!id && !hasContent) return toast("Fill in the idea before saving.", "warn");
     try {
       if (id) {
         await guard(sb.from("ideas").update(obj).eq("id", id), "Idea saved.");
       } else {
-        await guard(sb.from("ideas").insert(Object.assign({ project_id: projectId, learner_id: ME.id }, obj)), "Idea saved.");
+        // .select() returns the new row so the slot immediately owns an id (no duplicate inserts)
+        await guard(sb.from("ideas").insert(Object.assign({ project_id: proj.id, learner_id: ME.id }, obj)).select(), "Idea saved.");
       }
-      // move project into ideas_in_progress on first save
-      await sb.rpc("change_project_status", { _project: projectId, _new: "ideas_in_progress" }).then(() => {}, () => {});
+      if (proj.status === "not_started")
+        await sb.rpc("change_project_status", { _project: proj.id, _new: "ideas_in_progress" }).then(() => {}, () => {});
+      if (!obj.title) toast("Saved as a draft — add a title before you can submit.", "warn");
+      viewIdeas();
+    } catch (_) {}
+  }
+
+  async function deleteIdea(proj, id) {
+    if (!confirm("Delete this idea? This cannot be undone.")) return;
+    try {
+      await guard(sb.from("ideas").delete().eq("id", id), "Idea deleted.");
+      // if this project was already submitted and now has fewer than 3 complete ideas, reopen for editing
+      if (["ideas_submitted", "ideas_under_review"].includes(proj.status)) {
+        const { data: left } = await sb.from("ideas").select("id,title").eq("project_id", proj.id);
+        if ((left || []).filter((i) => i.title).length < 3)
+          await sb.rpc("change_project_status", { _project: proj.id, _new: "ideas_in_progress", _reason: "Idea deleted by learner" }).then(() => {}, () => {});
+      }
+      viewIdeas();
+    } catch (_) {}
+  }
+
+  async function withdrawIdeas(proj) {
+    if (!confirm("Withdraw your submitted ideas so you can edit them again?")) return;
+    try {
+      await guard(sb.rpc("change_project_status", { _project: proj.id, _new: "ideas_in_progress", _reason: "Withdrawn by learner" }));
+      await sb.from("ideas").update({ submitted: false }).eq("project_id", proj.id);
+      toast("Ideas reopened for editing.");
       viewIdeas();
     } catch (_) {}
   }
@@ -450,8 +518,8 @@
   async function submitIdeas(proj) {
     const { data: ideas } = await sb.from("ideas").select("id,title").eq("project_id", proj.id);
     const filled = (ideas || []).filter((i) => i.title);
-    if (filled.length < 3) return toast("Please complete and save all three ideas first.", "warn");
-    if (!confirm("Submit all three ideas for review? You won't be able to edit them until your supervisor responds.")) return;
+    if (filled.length < 3) return toast("You have " + filled.length + " of 3 ideas saved. Save all three (each needs a title) before submitting.", "warn");
+    if (!confirm("Submit all three ideas for review? You can still withdraw them later if you need to make changes.")) return;
     try {
       await sb.from("ideas").update({ submitted: true }).eq("project_id", proj.id);
       await guard(sb.rpc("change_project_status", { _project: proj.id, _new: "ideas_submitted" }));
@@ -754,8 +822,11 @@
     const ideaCards = ideas.map((i, n) =>
       '<div class="border rounded-lg p-4 mb-3">' +
         '<div class="flex items-center justify-between mb-2"><h4 class="font-semibold">Idea ' + (n + 1) + ": " + esc(i.title || "Untitled") + "</h4>" +
+          '<div class="flex items-center gap-2">' +
           (i.is_selected ? '<span class="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full">Selected</span>'
             : '<button class="select-idea text-xs bg-brand text-white px-2 py-1 rounded" data-id="' + i.id + '">Select this idea</button>') +
+          '<button class="del-idea-admin text-xs text-red-600 border border-red-200 hover:bg-red-50 px-2 py-1 rounded" data-id="' + i.id + '">Delete</button>' +
+          "</div>" +
         "</div>" +
         '<div class="grid gap-2 md:grid-cols-2 text-sm">' +
           IDEA_FIELDS.filter(([f]) => f !== "title").map(([f, lbl]) =>
@@ -776,11 +847,55 @@
         '<a href="#/project/' + proj.id + '" class="text-brand text-sm">Full project view →</a></div>' +
       card("Submitted ideas", ideaCards || '<p class="text-slate-500 text-sm">No ideas.</p>') +
       card("Project scope", scopeHtml) +
-      card("Move project", supervisorRowActions(proj))
+      card("Approve / move project", approvalButtons(proj) + supervisorRowActions(proj))
     );
 
     document.querySelectorAll(".select-idea").forEach((b) => (b.onclick = () => selectIdea(proj, b.dataset.id)));
+    document.querySelectorAll(".del-idea-admin").forEach((b) => (b.onclick = () => deleteIdeaAdmin(proj, b.dataset.id)));
+    document.querySelectorAll(".quick-status").forEach((b) => (b.onclick = () => quickStatus(proj, b.dataset.status, b.dataset.reasonprompt === "1")));
     bindReviewActions(proj);
+  }
+
+  function approvalButtons(proj) {
+    const s = proj.status;
+    let btns = [];
+    if (["ideas_submitted", "ideas_under_review"].includes(s)) {
+      btns.push(qbtn("changes_requested", "Request changes to ideas", "amber", true));
+    } else if (s === "scope_submitted") {
+      btns.push(qbtn("scope_approved", "Approve scope", "green", false));
+      btns.push(qbtn("changes_requested", "Request scope changes", "amber", true));
+    } else if (s === "scope_approved") {
+      btns.push(qbtn("building", "Move to Building", "green", false));
+    } else if (s === "project_submitted") {
+      btns.push(qbtn("approved", "Approve project", "green", false));
+      btns.push(qbtn("final_changes_requested", "Request final changes", "amber", true));
+    }
+    if (!btns.length) return "";
+    return '<div class="flex flex-wrap gap-2 mb-3">' + btns.join("") +
+      '<span class="w-full text-xs text-slate-400">To select the winning idea, use the "Select this idea" button on an idea above.</span></div>';
+  }
+  function qbtn(status, label, color, reasonPrompt) {
+    const cls = color === "green" ? "bg-emerald-600 hover:bg-emerald-700" : "bg-amber-500 hover:bg-amber-600";
+    return '<button class="quick-status text-white rounded-lg px-3 py-1.5 text-sm ' + cls + '" data-status="' + status + '" data-reasonprompt="' + (reasonPrompt ? "1" : "0") + '">' + esc(label) + "</button>";
+  }
+  async function quickStatus(proj, status, reasonPrompt) {
+    let reason = null;
+    if (reasonPrompt) {
+      reason = prompt("What changes are needed? (this is shown to the learner)");
+      if (reason === null) return; // cancelled
+    }
+    try {
+      await guard(sb.rpc("change_project_status", { _project: proj.id, _new: status, _reason: reason || null }), "Updated.");
+      if (reason) await sb.from("comments").insert({ project_id: proj.id, author_id: ME.id, body: reason, ctype: "decision" });
+      viewReview(proj.id);
+    } catch (_) {}
+  }
+  async function deleteIdeaAdmin(proj, id) {
+    if (!confirm("Delete this idea from the learner's submission? This cannot be undone.")) return;
+    try {
+      await guard(sb.from("ideas").delete().eq("id", id), "Idea deleted.");
+      viewReview(proj.id);
+    } catch (_) {}
   }
 
   function supervisorRowActions(proj) {

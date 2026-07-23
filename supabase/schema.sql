@@ -376,7 +376,9 @@ begin
   end;
 
   if _role <> 'superadmin' then
-    if not ( _new = any(_allowed) or _new in ('on_hold','withdrawn') ) then
+    if not ( _new = any(_allowed)
+             or _new in ('on_hold','withdrawn')
+             or (_new = 'ideas_in_progress' and _cur in ('ideas_submitted','ideas_under_review')) ) then
       raise exception 'Illegal status transition: % -> %', _cur, _new;
     end if;
     if _role = 'learner' and _new in (
@@ -495,7 +497,7 @@ create policy ideas_insert on public.ideas for insert with check (learner_id = a
 drop policy if exists ideas_update on public.ideas;
 create policy ideas_update on public.ideas for update using (learner_id = auth.uid() or public.can_supervise_project(project_id));
 drop policy if exists ideas_delete on public.ideas;
-create policy ideas_delete on public.ideas for delete using (learner_id = auth.uid() or public.is_superadmin());
+create policy ideas_delete on public.ideas for delete using (learner_id = auth.uid() or public.can_supervise_project(project_id));
 
 drop policy if exists scope_select on public.scopes;
 create policy scope_select on public.scopes for select using (public.can_access_project(project_id));
